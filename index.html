@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Milli Takım Fikstürü</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <h1 class="text-3xl font-bold text-center mb-6">Milli Takım Fikstürü</h1>
+    <div id="content" class="max-w-2xl mx-auto space-y-4 text-center">
+        <p>Yükleniyor...</p>
+    </div>
+
+    <script>
+        async function dosyayiOku() {
+            try {
+                // Sadece yanındaki dosyayı okur, internete çıkmaz
+                const response = await fetch('maclar.json');
+                const data = await response.json();
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="p-4 bg-slate-800 rounded-lg">
+                        <h2 class="text-xl font-bold text-green-400">⚽ Futbol</h2>
+                        <p>${data.futbol.rakip} | ${data.futbol.tarih} ${data.futbol.saat}</p>
+                    </div>
+                    <div class="p-4 bg-slate-800 rounded-lg">
+                        <h2 class="text-xl font-bold text-orange-400">🏀 Basketbol</h2>
+                        <p>${data.basketbol.rakip} | ${data.basketbol.tarih} ${data.basketbol.saat}</p>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('content').innerHTML = "Hata: maclar.json dosyası bulunamadı. Lütfen aynı klasörde olduğundan emin ol.";
+            }
+        }
+        dosyayiOku();
+    </script>
+</body>
+</html>
