@@ -6,34 +6,41 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-white p-8">
-    <h1 class="text-4xl font-bold text-center mb-10">Milli Takım Fikstürü</h1>
-    <div id="container" class="max-w-3xl mx-auto space-y-4">
-        </div>
+    <h1 class="text-3xl font-bold text-center mb-6">Milli Takım Fikstürü</h1>
+    <div id="app" class="max-w-2xl mx-auto space-y-4">
+        <div id="loader" class="text-center">Veriler API'den alınıyor...</div>
+    </div>
 
     <script>
-        // Ücretsiz, limitsiz ve en önemlisi; hatasız çalışan veri kaynağımız
-        async function render() {
-            const container = document.getElementById('content');
-            
-            // Senin verdiğin güncel maçları içeren "Statik Hata Korumalı" verimiz
-            // API'ler bazen boş döner, bu yüzden sistemimizi "API gelmezse bunu göster" şeklinde kurduk.
-            const veriler = [
-                { brans: "Futbol", mac: "Türkiye vs Galler", tarih: "06 Eyl 2026 21:45", renk: "green" },
-                { brans: "Basketbol", mac: "Bosna Hersek vs Türkiye", tarih: "02 Tem 2026 21:00", renk: "orange" },
-                { brans: "Voleybol", mac: "Türkiye vs İtalya", tarih: "15 Tem 2026 18:00", renk: "blue" }
-            ];
-
-            const html = veriler.map(v => `
-                <div class="p-6 bg-slate-800 rounded-xl border border-slate-700 shadow-xl">
-                    <div class="text-${v.renk}-400 font-bold uppercase text-sm">${v.brans}</div>
-                    <div class="text-2xl mt-1">${v.mac}</div>
-                    <div class="text-gray-400 mt-2 text-sm">📅 ${v.tarih}</div>
-                </div>
-            `).join('');
-            
-            document.getElementById('container').innerHTML = html;
+        const API_KEY = "ed73af13bddfca5caf779860e5a0925c";
+        const headers = { "x-apisports-key": API_KEY };
+        
+        async function veriCek(url) {
+            const response = await fetch(url, { headers });
+            return await response.json();
         }
-        render();
+
+        async function baslat() {
+            const app = document.getElementById('app');
+            try {
+                // Futbol için doğrudan endpoint'e gidiyoruz
+                const data = await veriCek("https://v3.football.api-sports.io/fixtures?team=1564&next=3");
+                
+                if (data.response && data.response.length > 0) {
+                    app.innerHTML = data.response.map(m => `
+                        <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
+                            <div class="font-bold">${m.teams.home.name} vs ${m.teams.away.name}</div>
+                            <div class="text-sm text-gray-400">${m.league.name} | ${new Date(m.fixture.date).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    app.innerHTML = "<p class='text-center'>API'den veri gelmedi (Maç yok veya limit doldu).</p>";
+                }
+            } catch (e) {
+                app.innerHTML = "<p class='text-center text-red-500'>Hata: " + e.message + "</p>";
+            }
+        }
+        baslat();
     </script>
 </body>
 </html>
