@@ -1,46 +1,343 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <title>Milli Takım Fikstürü</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ay-Yıldız Takvimi | Türkiye Milli Takımları</title>
+<style>
+  :root{
+    --red:#E30A17;
+    --red-dark:#a3070f;
+    --ink:#16110f;
+    --paper:#f7f3ec;
+    --cream:#efe7d8;
+    --gold:#c9a04d;
+    --line:#d8cdb8;
+    --muted:#6b6256;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Iowan Old Style","Georgia",serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .scoreline{
+    position:fixed; top:0; left:0; right:0; height:6px;
+    background:repeating-linear-gradient(90deg,var(--red) 0 18px,var(--ink) 18px 20px);
+    z-index:50;
+  }
+  header{
+    padding:64px 24px 40px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .crescent{
+    width:46px;height:46px;margin:0 auto 18px;
+    position:relative;
+  }
+  .crescent svg{width:100%;height:100%;fill:var(--red);}
+  header h1{
+    font-family:"Trajan Pro","Cinzel","Iowan Old Style",serif;
+    font-size:clamp(2rem,5vw,3.4rem);
+    letter-spacing:0.04em;
+    margin:0;
+    text-transform:uppercase;
+  }
+  header h1 span{color:var(--red);}
+  header p.tag{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    color:var(--muted);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    font-size:0.78rem;
+    margin-top:12px;
+  }
+  nav.sportnav{
+    display:flex; justify-content:center; gap:10px;
+    margin-top:30px; flex-wrap:wrap;
+  }
+  nav.sportnav button{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase;
+    padding:10px 22px;
+    background:transparent;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    cursor:pointer;
+    transition:all .25s ease;
+  }
+  nav.sportnav button.active, nav.sportnav button:hover{
+    background:var(--ink); color:var(--paper);
+  }
+
+  main{max-width:1040px;margin:0 auto;padding:50px 20px 90px;}
+  .sport-section{display:none;}
+  .sport-section.active{display:block;}
+
+  .section-title{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:0.78rem; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--muted);
+    display:flex; align-items:center; gap:14px;
+    margin:0 0 22px;
+  }
+  .section-title::after{
+    content:""; flex:1; height:1px; background:var(--line);
+  }
+  .col-num{color:var(--red); font-weight:bold;}
+
+  .columns{
+    display:grid; grid-template-columns:1fr 1fr; gap:48px;
+  }
+  @media (max-width:760px){ .columns{grid-template-columns:1fr; gap:36px;} }
+
+  .match{
+    border-bottom:1px solid var(--line);
+    padding:18px 0;
+    display:grid;
+    grid-template-columns:54px 1fr;
+    gap:16px;
+    align-items:start;
+  }
+  .match:last-child{border-bottom:none;}
+  .match .when{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:0.7rem; color:var(--muted); line-height:1.3;
+    text-align:center; padding-top:3px;
+  }
+  .match .when .day{
+    display:block; font-size:1.5rem; color:var(--ink);
+    font-family:"Iowan Old Style",Georgia,serif; line-height:1;
+  }
+  .match .body .teams{
+    font-size:1.08rem; font-weight:600; margin-bottom:4px;
+  }
+  .match .body .teams .vs{color:var(--red); font-style:italic; font-weight:400; margin:0 6px;}
+  .match .body .meta{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:0.74rem; color:var(--muted); letter-spacing:0.02em;
+  }
+  .match .body .score{
+    display:inline-block; margin-left:10px; padding:2px 9px;
+    background:var(--ink); color:var(--paper); font-size:0.75rem;
+    font-family:"Helvetica Neue",Arial,sans-serif; letter-spacing:0.04em;
+  }
+  .match .body .tour{color:var(--red-dark);}
+
+  .empty, .loading, .err{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:0.85rem; color:var(--muted);
+    padding:20px 0;
+  }
+  .err{color:var(--red-dark);}
+
+  footer{
+    text-align:center; padding:30px 20px 60px;
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:0.7rem; color:var(--muted); letter-spacing:0.04em;
+  }
+  footer a{color:var(--red-dark);}
+</style>
 </head>
-<body class="bg-slate-900 text-white p-8">
-    <h1 class="text-3xl font-bold text-center mb-6">Milli Takım Fikstürü</h1>
-    <div id="app" class="max-w-2xl mx-auto space-y-4">
-        <div id="loader" class="text-center">Veriler API'den alınıyor...</div>
+<body>
+
+<div class="scoreline"></div>
+
+<header>
+  <div class="crescent">
+    <svg viewBox="0 0 100 100"><path d="M62 5 A45 45 0 1 0 62 95 A36 36 0 1 1 62 5 Z"/><polygon points="78,38 82,48 93,48 84,55 87,66 78,59 69,66 72,55 63,48 74,48"/></svg>
+  </div>
+  <h1>Ay-Yıldız <span>Takvimi</span></h1>
+  <p class="tag">Türkiye A Milli Takımları · Son ve Sıradaki 5 Maç</p>
+  <nav class="sportnav">
+    <button data-sport="futbol" class="active">Futbol</button>
+    <button data-sport="voleybol">Voleybol</button>
+    <button data-sport="basketbol">Basketbol</button>
+  </nav>
+</header>
+
+<main>
+
+  <section class="sport-section active" id="sec-futbol">
+    <div class="columns">
+      <div>
+        <p class="section-title"><span class="col-num">01</span> Son 5 Maç</p>
+        <div class="list" id="futbol-last"><p class="loading">Veriler yükleniyor…</p></div>
+      </div>
+      <div>
+        <p class="section-title"><span class="col-num">02</span> Sıradaki 5 Maç</p>
+        <div class="list" id="futbol-next"><p class="loading">Veriler yükleniyor…</p></div>
+      </div>
     </div>
+  </section>
 
-    <script>
-        const API_KEY = "ed73af13bddfca5caf779860e5a0925c";
-        const headers = { "x-apisports-key": API_KEY };
-        
-        async function veriCek(url) {
-            const response = await fetch(url, { headers });
-            return await response.json();
-        }
+  <section class="sport-section" id="sec-voleybol">
+    <div class="columns">
+      <div>
+        <p class="section-title"><span class="col-num">01</span> Son 5 Maç</p>
+        <div class="list" id="voleybol-last"><p class="loading">Veriler yükleniyor…</p></div>
+      </div>
+      <div>
+        <p class="section-title"><span class="col-num">02</span> Sıradaki 5 Maç</p>
+        <div class="list" id="voleybol-next"><p class="loading">Veriler yükleniyor…</p></div>
+      </div>
+    </div>
+  </section>
 
-        async function baslat() {
-            const app = document.getElementById('app');
-            try {
-                // Futbol için doğrudan endpoint'e gidiyoruz
-                const data = await veriCek("https://v3.football.api-sports.io/fixtures?team=1564&next=3");
-                
-                if (data.response && data.response.length > 0) {
-                    app.innerHTML = data.response.map(m => `
-                        <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
-                            <div class="font-bold">${m.teams.home.name} vs ${m.teams.away.name}</div>
-                            <div class="text-sm text-gray-400">${m.league.name} | ${new Date(m.fixture.date).toLocaleString()}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    app.innerHTML = "<p class='text-center'>API'den veri gelmedi (Maç yok veya limit doldu).</p>";
-                }
-            } catch (e) {
-                app.innerHTML = "<p class='text-center text-red-500'>Hata: " + e.message + "</p>";
-            }
-        }
-        baslat();
-    </script>
+  <section class="sport-section" id="sec-basketbol">
+    <div class="columns">
+      <div>
+        <p class="section-title"><span class="col-num">01</span> Son 5 Maç</p>
+        <div class="list" id="basketbol-last"><p class="loading">Veriler yükleniyor…</p></div>
+      </div>
+      <div>
+        <p class="section-title"><span class="col-num">02</span> Sıradaki 5 Maç</p>
+        <div class="list" id="basketbol-next"><p class="loading">Veriler yükleniyor…</p></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Veriler <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">TheSportsDB</a> açık API'sinden anlık olarak çekilmektedir.<br>
+  Saatler tarayıcınızın yerel saat dilimine göre gösterilir.
+</footer>
+
+<script>
+/* ============================================================
+   AYARLAR
+   TheSportsDB ücretsiz "test" anahtarı: 123
+   Takım ID'leri sabit (config) olarak tutulur; bulunamayan
+   spor için arama yapılır, o da başarısız olursa kullanıcıya
+   ID'yi elle girmesi söylenir.
+   ============================================================ */
+const API_KEY = "123";
+const BASE = `https://www.thesportsdb.com/api/v1/json/${API_KEY}`;
+
+// Bilinen / doğrulanmış takım ID'leri. Voleybol ve basketbol millî
+// takımları TheSportsDB'de her zaman bulunamayabilir; bu yüzden
+// önce isim araması deneniyor, ID burada sabitlenmişse o kullanılıyor.
+const TEAM_CONFIG = {
+  futbol:    { searchName: "Turkey",          fixedId: "135985" }, // Türkiye Millî Futbol Takımı
+  voleybol:  { searchName: "Turkey Volleyball", fixedId: null },
+  basketbol: { searchName: "Turkey Basketball", fixedId: null },
+};
+
+const MONTHS_TR = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+
+function formatWhen(dateStr, timeStr){
+  if(!dateStr) return {day:"?", rest:""};
+  const d = new Date(dateStr + "T" + (timeStr || "00:00:00") + "Z");
+  if(isNaN(d.getTime())){
+    return { day:"?", rest: dateStr };
+  }
+  const day = d.getDate();
+  const month = MONTHS_TR[d.getMonth()];
+  const year = d.getFullYear();
+  let timePart = "";
+  if(timeStr){
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    timePart = `${hh}:${mm}`;
+  }
+  return { day, rest: `${month} ${year}${timePart ? " · " + timePart : ""}` };
+}
+
+async function findTeamId(sportKey){
+  const cfg = TEAM_CONFIG[sportKey];
+  if(cfg.fixedId) return cfg.fixedId;
+  try{
+    const res = await fetch(`${BASE}/searchteams.php?t=${encodeURIComponent(cfg.searchName)}`);
+    const data = await res.json();
+    if(data && data.teams && data.teams.length){
+      // "Turkey" içeren ve millî takım olan ilk sonucu tercih et
+      const team = data.teams.find(t => /turkey|türkiye/i.test(t.strTeam)) || data.teams[0];
+      return team.idTeam;
+    }
+  }catch(e){
+    console.warn("Takım arama hatası:", sportKey, e);
+  }
+  return null;
+}
+
+async function fetchEvents(teamId, mode){
+  // mode: "last" veya "next"
+  const endpoint = mode === "last" ? "eventslast.php" : "eventsnext.php";
+  const res = await fetch(`${BASE}/${endpoint}?id=${teamId}`);
+  if(!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  const key = mode === "last" ? "results" : "events";
+  return (data && data[key]) ? data[key].slice(0,5) : [];
+}
+
+function renderMatches(containerId, events, mode){
+  const el = document.getElementById(containerId);
+  if(!events || !events.length){
+    el.innerHTML = `<p class="empty">Bu kategori için şu anda gösterilecek maç verisi bulunamadı.</p>`;
+    return;
+  }
+  el.innerHTML = events.map(ev => {
+    const when = formatWhen(ev.dateEvent, ev.strTime);
+    const home = ev.strHomeTeam || "?";
+    const away = ev.strAwayTeam || "?";
+    const league = ev.strLeague || ev.strEvent || "Turnuva belirtilmemiş";
+    const venue = ev.strVenue ? ` · ${ev.strVenue}` : "";
+    let score = "";
+    if(mode === "last" && ev.intHomeScore !== null && ev.intAwayScore !== null && ev.intHomeScore !== undefined){
+      score = `<span class="score">${ev.intHomeScore} - ${ev.intAwayScore}</span>`;
+    }
+    return `
+      <div class="match">
+        <div class="when"><span class="day">${when.day}</span>${when.rest}</div>
+        <div class="body">
+          <div class="teams">${home}<span class="vs">vs</span>${away}${score}</div>
+          <div class="meta"><span class="tour">${league}</span>${venue}</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+async function loadSport(sportKey){
+  const lastEl = `${sportKey}-last`;
+  const nextEl = `${sportKey}-next`;
+  try{
+    const teamId = await findTeamId(sportKey);
+    if(!teamId){
+      const msg = `<p class="err">Bu spor dalı için Türkiye millî takımı otomatik olarak bulunamadı. TheSportsDB'de takım ID'sini bulup index.html dosyasındaki TEAM_CONFIG.${sportKey}.fixedId alanına elle girebilirsiniz.</p>`;
+      document.getElementById(lastEl).innerHTML = msg;
+      document.getElementById(nextEl).innerHTML = msg;
+      return;
+    }
+    const [last, next] = await Promise.all([
+      fetchEvents(teamId, "last").catch(()=>[]),
+      fetchEvents(teamId, "next").catch(()=>[]),
+    ]);
+    renderMatches(lastEl, last, "last");
+    renderMatches(nextEl, next, "next");
+  }catch(e){
+    console.error(e);
+    document.getElementById(lastEl).innerHTML = `<p class="err">Veri çekilirken bir hata oluştu.</p>`;
+    document.getElementById(nextEl).innerHTML = `<p class="err">Veri çekilirken bir hata oluştu.</p>`;
+  }
+}
+
+// Sekme geçişleri
+document.querySelectorAll(".sportnav button").forEach(btn=>{
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".sportnav button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".sport-section").forEach(s=>s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(`sec-${btn.dataset.sport}`).classList.add("active");
+  });
+});
+
+// İlk yükleme
+["futbol","voleybol","basketbol"].forEach(loadSport);
+</script>
+
 </body>
 </html>
